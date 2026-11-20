@@ -1,5 +1,6 @@
-// Setboek offline cache: serves the app from cache and refreshes it in the background.
-const CACHE = 'setboek-v1';
+// Setboek offline cache. The page itself is fetched from the network first (so updates show
+// immediately when online) and falls back to the cache offline; icons/manifest come from cache.
+const CACHE = 'setboek-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -15,13 +16,21 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  e.respondWith(caches.open(CACHE).then(async cache => {
-    const key = req.mode === 'navigate' ? './index.html' : req;
-    const cached = await cache.match(key, {ignoreSearch: true});
-    const fresh = fetch(req).then(res => {
-      if (res.ok) cache.put(key, res.clone());
-      return res;
-    }).catch(() => cached);
-    return cached || fresh;
-  }));
+  if (req.mode === 'navigate') {
+    e.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      try {
+        const res = await Promise.race([
+          fetch(req, {cache: 'no-store'}),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000)),
+        ]);
+        if (res.ok) cache.put('./index.html', res.clone());
+        return res;
+      } catch (err) {
+        return (await cache.match('./index.html')) || Response.error();
+      }
+    })());
+    return;
+  }
+  e.respondWith(caches.match(req, {ignoreSearch: true}).then(hit => hit || fetch(req)));
 });
