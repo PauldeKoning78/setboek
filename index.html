@@ -170,6 +170,11 @@ svg.chart text.val{fill:var(--text);font-weight:700;font-size:12px}
 .exc.ss{border-left:4px solid var(--ssc)}
 .exh{display:flex;align-items:center;gap:8px}
 .exname{flex:1;text-align:left;font-weight:700;font-size:17px;color:var(--accent);min-width:0}
+.tip{font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+.infobox{background:var(--accent-soft);border-radius:12px;padding:10px 12px;font-size:14.5px;margin:6px 0 4px;line-height:1.4}
+.princ{margin:10px 0 4px;padding:0;list-style:none;display:grid;gap:8px}
+.princ li{font-size:14.5px;line-height:1.4}
+.princ b{display:block}
 .ss-tag{font-size:12px;font-weight:700;color:var(--ssc);margin:2px 0 0}
 .exc .note-in{font-size:15px;color:var(--text);padding:6px 0 2px}
 .restbtn{display:inline-flex;align-items:center;gap:5px;color:var(--accent);font-size:14px;font-weight:600;padding:4px 0 8px}
@@ -292,7 +297,7 @@ const IC = {
 const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
 
 /* ---------- exercise library ---------- */
-const MUSCLES = ['Borst','Rug','Schouders','Biceps','Triceps','Onderarmen','Buik','Quadriceps','Hamstrings','Billen','Kuiten','Cardio','Full body'];
+const MUSCLES = ['Borst','Rug','Schouders','Biceps','Triceps','Onderarmen','Buik','Quadriceps','Hamstrings','Billen','Kuiten','Cardio','Full body','Mobiliteit'];
 const EQUIP = ['Barbell','Dumbbell','Machine','Kabel','Lichaamsgewicht','Kettlebell','Smith','Overig'];
 const TYPES = {wr: 'Gewicht + reps', r: 'Alleen reps', t: 'Tijd'};
 const LIB = `Bankdrukken|Borst|Barbell
@@ -395,7 +400,72 @@ Burpees|Full body|Lichaamsgewicht|r
 Clean and press|Full body|Barbell
 Power clean|Full body|Barbell
 Thruster|Full body|Barbell
-Kettlebell clean|Full body|Kettlebell`.split('\n').map(l => { const [name, muscle, equip, type] = l.split('|'); return {id: 'x-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), name, muscle, equip, type: type || 'wr'}; });
+Kettlebell clean|Full body|Kettlebell
+Wall sit|Quadriceps|Lichaamsgewicht|t
+Lateral lunge|Quadriceps|Dumbbell
+Squat jump|Quadriceps|Lichaamsgewicht|r
+Box jump|Quadriceps|Lichaamsgewicht|r
+Single-leg Roemeense deadlift|Hamstrings|Dumbbell
+Lateral band walk|Billen|Overig|r
+Pallof press|Buik|Kabel
+Dead bug|Buik|Lichaamsgewicht|r
+Bird dog|Buik|Lichaamsgewicht|r
+Suitcase carry|Buik|Dumbbell|t
+Band pull-apart|Schouders|Overig|r
+Skater hops|Cardio|Lichaamsgewicht|t
+Single-leg balance|Full body|Lichaamsgewicht|t
+Hip flexor stretch|Mobiliteit|Lichaamsgewicht|t
+Thoracic rotation|Mobiliteit|Lichaamsgewicht|r`.split('\n').map(l => { const [name, muscle, equip, type] = l.split('|'); return {id: 'x-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), name, muscle, equip, type: type || 'wr'}; });
+
+/* ---------- schema library ---------- */
+const T = (exId, sets, target, rest, tip, type) => ({exId, rest, superset: null, tip: tip || '', sets: Array.from({length: sets}, () => ({type: type || 'n', tkg: null, treps: typeof target === 'number' ? target : null, tsec: typeof target === 'string' ? parseTime(target) : null}))});
+const WU = (exId, t) => T(exId, 1, t, 0, 'Warming-up: rustig tempo, je kunt nog praten.', 'w');
+const SCHEMAS = [{
+  id: 'skifit', name: 'Skifit opbouw', sub: '3 fases van ± 3 weken · full body · 2–3× per week',
+  desc: 'Voor wie lang niet getraind heeft en fit de piste op wil. Je bouwt rustig op en traint elke keer benen, borst, rug, romp en conditie. Er zit extra veel rugwerk in, voor een betere houding als je veel zit.',
+  principles: [
+    ['Train als een atleet', 'Je beweegt in alle richtingen: zijwaarts, op één been en later explosief, zoals op de piste.'],
+    ['Balans voor je houding', 'Per training twee trekoefeningen tegenover één duwoefening, met elke keer face pulls of reverse flyes voor je bovenrug.'],
+    ['Eén kant tegelijk', 'Elke training heeft eenbenig of eenarmig werk, zodat je zwakke kant bijtrekt en je knieën stabieler worden.'],
+    ['Romp houdt beweging tegen', 'Dead bug, Pallof press, side plank en suitcase carry trainen je romp om níet te buigen of te draaien. Dat beschermt je rug.'],
+    ['Controle boven gewicht', 'Laat het gewicht in 2–3 tellen zakken en voel de spier werken. Goede techniek gaat altijd voor meer kilo.'],
+    ['Blessures voorkomen', 'Eerst activeren (bilspieren), sterke hamstrings en heupen voor je knieën, en face pulls voor gezonde schouders.'],
+    ['Slim zwaarder worden', 'Haal je in alle sets het aantal herhalingen met goede techniek en nog 2 over? Neem de volgende keer iets meer gewicht.'],
+  ],
+  routines: [
+    {name: 'Skifit 1A · Basis', note: 'Fase 1 (week 1–3). Kies een gewicht waarmee je nog 3–4 herhalingen meer zou kunnen. Wissel af met 1B. Door naar fase 2 als alles soepel en pijnvrij gaat.', exercises: [
+      WU('x-fietsen', '8:00'), T('x-glute-bridge', 2, 15, 45, 'Activatie: knijp je billen 1 tel aan bovenin.'), T('x-goblet-squat', 2, 12, 60, 'Dumbbell tegen je borst, 3 tellen omlaag, knieën in lijn met je tenen.'),
+      T('x-push-up', 2, 8, 60, 'Te zwaar? Handen op een bank. Romp blijft een rechte plank.'), T('x-lat-pulldown', 2, 12, 60, 'Trek naar je bovenborst, schouders laag en weg van je oren.'),
+      T('x-face-pull', 2, 15, 45, 'Trek naar je voorhoofd en eindig met je duimen naar achteren.'), T('x-wall-sit', 2, '0:30', 45, 'Rug tegen de muur, knieën ± 90°: de skihouding.'), T('x-dead-bug', 2, 10, 45, 'Onderrug blijft plat op de grond. Langzaam.')]},
+    {name: 'Skifit 1B · Basis', note: 'Fase 1 (week 1–3). Rustig opbouwen, techniek eerst. Wissel af met 1A.', exercises: [
+      WU('x-roeiergometer', '8:00'), T('x-lateral-band-walk', 2, 12, 45, 'Activatie: elastiek boven je knieën, stappen per kant.'), T('x-step-up', 2, 10, 60, 'Per been. Kniehoge bank, duw af via je hiel.'),
+      T('x-chest-press', 2, 12, 60, 'Gecontroleerd terug, 2–3 tellen.'), T('x-seated-cable-row', 2, 12, 60, 'Borst vooruit, trek je schouderbladen naar elkaar.'),
+      T('x-reverse-flyes', 2, 15, 45, 'Licht gewicht, voel je achterste schouders.'), T('x-lateral-lunge', 2, 8, 60, 'Per kant. Zak door in je heup, andere been blijft gestrekt.'),
+      T('x-side-plank', 2, '0:20', 30, 'Per kant. Heup omhoog, lichaam in één lijn.'), T('x-single-leg-balance', 2, '0:30', 20, 'Per been. Te makkelijk? Ogen dicht.')]},
+    {name: 'Skifit 2A · Opbouw', note: 'Fase 2 (week 4–6). Nu 3 sets en iets zwaarder: je houdt nog 2–3 herhalingen over. Wissel af met 2B.', exercises: [
+      WU('x-fietsen', '6:00'), T('x-squat-jump', 2, 5, 60, 'Explosief omhoog, zacht landen door je knieën te buigen.'), T('x-goblet-squat', 3, 10, 75, '3 tellen omlaag: traint de remkracht die je bij het skiën nodig hebt.'),
+      T('x-dumbbell-press', 3, 10, 75, 'Schouderbladen naar achteren en omlaag tegen de bank.'), T('x-dumbbell-row', 3, 10, 60, 'Per arm. Trek je elleboog naar je heup.'),
+      T('x-face-pull', 3, 15, 45, 'Eindig met je duimen naar achteren.'), T('x-single-leg-roemeense-deadlift', 3, 8, 60, 'Per been. Heup naar achteren, rug recht. Houd je vast als dat nodig is.'),
+      T('x-pallof-press', 3, 10, 45, 'Per kant. Kabel opzij, armen recht vooruit drukken zonder mee te draaien.'), T('x-fietsen', 1, '10:00', 0, 'Intervallen: 30 s hard, 30 s rustig, 10 rondes.')]},
+    {name: 'Skifit 2B · Opbouw', note: 'Fase 2 (week 4–6). 3 sets, iets zwaarder. Wissel af met 2A.', exercises: [
+      WU('x-roeiergometer', '6:00'), T('x-kettlebell-swing', 3, 12, 60, 'Kracht uit je heupen, armen hangen alleen mee.'), T('x-bulgarian-split-squat', 3, 8, 75, 'Per been. Achterste voet op een bank, romp licht voorover.'),
+      T('x-schuine-dumbbell-press', 3, 10, 75, 'Bank op ± 30°, gecontroleerd omlaag.'), T('x-lat-pulldown', 3, 10, 60, 'Schouders laag, trek naar je bovenborst.'),
+      T('x-reverse-flyes', 3, 15, 45, 'Licht gewicht, langzaam terug.'), T('x-lying-leg-curl', 3, 12, 60, 'Sterke hamstrings beschermen je knieën.'),
+      T('x-wall-sit', 3, '0:45', 45, 'De skihouding. Ademen blijven.'), T('x-side-plank', 3, '0:30', 30, 'Per kant.'), T('x-roeiergometer', 1, '8:00', 0, 'Intervallen: 30 s hard, 30 s rustig.')]},
+    {name: 'Skifit 3A · Piste', note: 'Fase 3 (week 7 en verder). Explosiever en langer volhouden. Wissel af met 3B en blijf dit doen tot je vertrekt.', exercises: [
+      WU('x-fietsen', '5:00'), T('x-squat-jump', 3, 8, 60, 'Zacht landen, meteen weer omhoog.'), T('x-skater-hops', 3, '0:30', 45, 'Zijwaarts van been naar been springen, kort stabiel landen.'),
+      T('x-goblet-squat', 3, 12, 75, '3 tellen omlaag, 1 tel pauze onderin.'), T('x-push-up', 3, 12, 60, 'Te makkelijk? Voeten op een bank.'), T('x-seated-cable-row', 3, 12, 60, 'Schouderbladen naar elkaar, 1 tel vasthouden.'),
+      T('x-face-pull', 3, 15, 45, 'Duimen naar achteren aan het eind.'), T('x-wall-sit', 3, '1:00', 45, 'Zwaarder? Dumbbell op je bovenbenen.'), T('x-suitcase-carry', 3, '0:40', 45, 'Zware dumbbell in één hand, rechtop lopen. Wissel per set van hand.')]},
+    {name: 'Skifit 3B · Piste', note: 'Fase 3 (week 7 en verder). Wissel af met 3A.', exercises: [
+      WU('x-roeiergometer', '5:00'), T('x-box-jump', 3, 6, 60, 'Lage box, zacht landen en rustig terugstappen.'), T('x-walking-lunges', 3, 12, 75, 'Per been, rechtop blijven.'),
+      T('x-schuine-dumbbell-press', 3, 10, 75, 'Gecontroleerd omlaag.'), T('x-pull-up', 3, 6, 75, 'Met elastiek of de assisted machine. Lukt dat niet: lat pulldown.'),
+      T('x-reverse-flyes', 3, 15, 45, 'Langzaam terug.'), T('x-kettlebell-swing', 3, 15, 60, 'Explosief uit je heupen.'), T('x-side-plank', 3, '0:40', 30, 'Per kant.'), T('x-fietsen', 1, '10:00', 0, 'Intervallen: 40 s hard, 20 s rustig.')]},
+    {name: 'Bureau-reset', note: 'Optioneel, ± 10 minuten. Voor rustdagen of thuis, tegen een stijf gevoel na lang zitten.', exercises: [
+      T('x-hip-flexor-stretch', 2, '0:45', 15, 'Per kant. Halve knielzit, bil aanspannen en heup naar voren.'), T('x-thoracic-rotation', 2, 8, 15, 'Per kant. Op handen en knieën, hand achter je hoofd en elleboog naar het plafond draaien.'),
+      T('x-band-pull-apart', 2, 15, 20, 'Elastiek met gestrekte armen uit elkaar trekken tot je borst.'), T('x-bird-dog', 2, 10, 20, 'Per kant. Arm en tegenovergesteld been strekken, romp stil.'),
+      T('x-glute-bridge', 2, 12, 20, 'Bovenin 2 tellen vasthouden.'), T('x-dead-hang', 2, '0:30', 20, 'Ontspannen hangen aan een stang. Geen stang? Borst rekken in een deurpost.')]},
+  ],
+}];
 
 /* ---------- state ---------- */
 const LS_KEY = 'setboek.v1';
@@ -732,6 +802,7 @@ function renderEditor(keepScroll) {
     return `<div class="exc ${e.superset ? 'ss' : ''}" ${e.superset ? `style="--ssc:${ssColor(e.superset)}"` : ''}>
       <div class="exh"><button class="exname" data-a="exMenu" data-ei="${ei}">${esc(info.name)}</button><button class="iconbtn" style="background:var(--fill);color:var(--muted);width:34px;height:34px" data-a="exMenu" data-ei="${ei}" aria-label="Opties">${ic('dots')}</button></div>
       ${e.superset ? `<div class="ss-tag">Superset ${e.superset}</div>` : ''}
+      ${e.tip ? `<div class="tip">${esc(e.tip)}</div>` : ''}
       ${mode !== 'routine' || true ? `<textarea class="note-in" rows="1" data-f="note" data-ei="${ei}" placeholder="Notitie toevoegen…">${esc(e.note || '')}</textarea>` : ''}
       ${mode !== 'edit' ? `<button class="restbtn" data-a="restPick" data-ei="${ei}">${ic('timer', 'sm')} Rust: ${e.rest ? mmss(e.rest) : 'uit'}</button>` : ''}
       <div class="sh" style="grid-template-columns:${gtc}">${c.map(x => `<span>${x[2]}</span>`).join('')}</div>
@@ -741,6 +812,7 @@ function renderEditor(keepScroll) {
   el.innerHTML = `<div class="ed-top"><div class="bar">${left}<div class="ttl">${titles[mode] || ''}</div>${right}</div>${stats}</div>
   <div id="edScroll"><div class="wrap">
     <input class="name-in" data-f="wname" value="${esc(w.name || '')}" placeholder="${mode === 'routine' ? 'Naam van routine' : 'Naam van training'}">
+    ${mode === 'live' && w.routineId ? (r => r && r.note ? `<div class="infobox">${esc(r.note)}</div>` : '')(S.routines.find(x => x.id === w.routineId)) : ''}
     <textarea class="note-in" rows="1" data-f="wnote" placeholder="${mode === 'routine' ? 'Beschrijving (optioneel)' : 'Notitie bij training…'}">${esc(w.note || '')}</textarea>
     ${exHtml || `<div class="card empty" style="margin-top:12px"><b>Nog geen oefeningen</b>Voeg je eerste oefening toe.</div>`}
     <div class="ed-actions"><button class="btn primary big" data-a="addExercise">${ic('plus')} Oefening toevoegen</button>
@@ -822,7 +894,15 @@ function renderSheet() {
     <div class="field"><span>Wat log je?</span><div class="opt">${Object.entries(TYPES).map(([k, l]) => `<button class="${c.type === k ? 'on' : ''}" data-a="cSet" data-k="type" data-v="${k}">${l}</button>`).join('')}</div></div>
     <div class="ed-actions"><button class="btn primary big" data-a="cSave">Opslaan</button><button class="btn block" data-a="closeSheet">Annuleer</button></div>`; }
   else if (s.type === 'routineMenu') { const r = S.routines.find(x => x.id === s.id);
-    h = `<h2>${esc(r.name)}</h2><p class="sub">${r.exercises.length} oefeningen · ${r.exercises.reduce((n, e) => n + e.sets.length, 0)} sets</p>` + menuHtml([{label: 'Start routine', a: 'startRoutine', d: {id: r.id}, icon: 'timer'}, {label: 'Bewerken', a: 'editRoutine', d: {id: r.id}}, {label: 'Dupliceren', a: 'dupRoutine', d: {id: r.id}}, {label: 'Verwijderen', a: 'deleteRoutine', d: {id: r.id}, cls: 'danger'}]); }
+    h = `<h2>${esc(r.name)}</h2><p class="sub">${r.exercises.length} oefeningen · ${r.exercises.reduce((n, e) => n + e.sets.length, 0)} sets</p>${r.note ? `<div class="infobox" style="margin-bottom:6px">${esc(r.note)}</div>` : ''}` + menuHtml([{label: 'Start routine', a: 'startRoutine', d: {id: r.id}, icon: 'timer'}, {label: 'Bewerken', a: 'editRoutine', d: {id: r.id}}, {label: 'Dupliceren', a: 'dupRoutine', d: {id: r.id}}, {label: 'Verwijderen', a: 'deleteRoutine', d: {id: r.id}, cls: 'danger'}]); }
+  else if (s.type === 'newRoutine') h = `<h2>Nieuwe routine</h2>` + menuHtml([{label: 'Lege routine', a: 'newRoutineEmpty', icon: 'plus'}, {label: 'Uit schema kiezen', a: 'schemaList', icon: 'dumb', right: ic('right', 'chev')}]);
+  else if (s.type === 'schemaList') h = `<h2>Schema's</h2><p class="sub">Kant-en-klare routines die je met één tik toevoegt en daarna zelf kunt aanpassen.</p>` + menuHtml(SCHEMAS.map(sc => ({label: `<b style="display:block">${esc(sc.name)}</b><small class="muted" style="font-size:13.5px">${esc(sc.sub)}</small>`, a: 'schemaOpen', d: {id: sc.id}, right: ic('right', 'chev')})));
+  else if (s.type === 'schema') { const sc = SCHEMAS.find(x => x.id === s.id); const have = sc.routines.filter(r => S.routines.some(x => x.name === r.name)).length;
+    h = `<h2>${esc(sc.name)}</h2><p class="sub">${esc(sc.sub)}</p><p style="margin:0 0 6px;font-size:15px;line-height:1.45">${esc(sc.desc)}</p>
+    <div class="sec-h" style="margin-left:0"><span>Uitgangspunten</span></div><ul class="princ">${sc.principles.map(([a, b]) => `<li><b>${esc(a)}</b><span class="muted">${esc(b)}</span></li>`).join('')}</ul>
+    <div class="sec-h" style="margin-left:0"><span>Routines</span></div><div class="menu">${sc.routines.map(r => `<div class="li" style="cursor:default"><span class="grow"><b>${esc(r.name)}</b><small>${esc(r.exercises.filter(e => e.sets[0].type !== 'w').map(e => exInfo(e.exId).name).join(', '))}</small></span></div>`).join('')}</div>
+    <div class="ed-actions"><button class="btn primary big" data-a="schemaAdd" data-id="${sc.id}">${have === sc.routines.length ? 'Al toegevoegd' : `Voeg ${sc.routines.length - have} routines toe`}</button><button class="btn block" data-a="closeSheet">Terug</button></div>
+    <p class="sub" style="margin-top:12px;font-size:13px">Heb je klachten of medische twijfels? Overleg dan eerst met je huisarts. Bij pijn: lichter of overslaan.</p>`; }
   else if (s.type === 'finishCheck') h = `<h2>${s.undone} ${s.undone === 1 ? 'set is' : 'sets zijn'} niet afgevinkt</h2><p class="sub">Niet-afgevinkte sets worden niet opgeslagen.</p><div class="ed-actions"><button class="btn primary block" data-a="finishNow">Toch opslaan</button><button class="btn block" data-a="closeSheet">Verder trainen</button></div>`;
   else if (s.type === 'done') { const wk = S.workouts.find(x => x.id === s.id); const prs = prMap().out[s.id] || [];
     h = `<h2>Training opgeslagen</h2><p class="sub">${esc(wk.name)} · ${fDay.format(wk.start)}</p>
@@ -842,12 +922,12 @@ function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = fals
 
 /* ---------- actions ---------- */
 function startWorkout(w) { S.active = w; ui.ed = {mode: 'live'}; ui.restEnd = 0; saveActive(true); renderAll(); }
-function routineToWorkout(r) { return {id: uid(), name: r.name, start: Date.now(), routineId: r.id, note: '', exercises: r.exercises.map(e => ({exId: e.exId, rest: e.rest ?? S.settings.rest, superset: e.superset || null, note: '', sets: e.sets.map(s => ({type: s.type || 'n', kg: null, reps: null, sec: null, rpe: null, done: false, tkg: s.tkg ?? null, treps: s.treps ?? null, tsec: s.tsec ?? null}))}))}; }
-function workoutToRoutineData(w) { return w.exercises.map(e => ({exId: e.exId, rest: e.rest ?? S.settings.rest, superset: e.superset || null, sets: e.sets.map(s => ({type: s.type, tkg: s.kg ?? null, treps: s.reps ?? null, tsec: s.sec ?? null}))})); }
+function routineToWorkout(r) { return {id: uid(), name: r.name, start: Date.now(), routineId: r.id, note: '', exercises: r.exercises.map(e => ({exId: e.exId, rest: e.rest ?? S.settings.rest, superset: e.superset || null, tip: e.tip || '', note: '', sets: e.sets.map(s => ({type: s.type || 'n', kg: null, reps: null, sec: null, rpe: null, done: false, tkg: s.tkg ?? null, treps: s.treps ?? null, tsec: s.tsec ?? null}))}))}; }
+function workoutToRoutineData(w) { return w.exercises.map(e => ({exId: e.exId, rest: e.rest ?? S.settings.rest, superset: e.superset || null, tip: e.tip || '', sets: e.sets.map(s => ({type: s.type, tkg: s.kg ?? null, treps: s.reps ?? null, tsec: s.sec ?? null}))})); }
 function cleanSS(w) { const cnt = {}; w.exercises.forEach(e => { if (e.superset) cnt[e.superset] = (cnt[e.superset] || 0) + 1; }); w.exercises.forEach(e => { if (e.superset && cnt[e.superset] < 2) e.superset = null; }); }
 function finishWorkout() {
   const a = S.active; const w = {id: a.id, name: (a.name || '').trim() || defaultName(a.start), start: a.start, end: Date.now(), note: a.note || '', routineId: a.routineId || null, exercises: []};
-  for (const e of a.exercises) { const sets = e.sets.filter(s => s.done).map(s => ({type: s.type, kg: s.kg, reps: s.reps, sec: s.sec, rpe: s.rpe})); if (sets.length) w.exercises.push({exId: e.exId, name: exInfo(e.exId).name, rest: e.rest, superset: e.superset, note: e.note || '', sets}); }
+  for (const e of a.exercises) { const sets = e.sets.filter(s => s.done).map(s => ({type: s.type, kg: s.kg, reps: s.reps, sec: s.sec, rpe: s.rpe})); if (sets.length) w.exercises.push({exId: e.exId, name: exInfo(e.exId).name, rest: e.rest, superset: e.superset, tip: e.tip || '', note: e.note || '', sets}); }
   cleanSS(w);
   S.workouts.push(w); touchWorkouts(); S.active = null; ui.ed = null; ui.restEnd = 0; ui.sheets = [];
   saveWorkout(w); saveActive(true); ui.tab = 'home'; ui.page = null; renderAll(); openSheet({type: 'done', id: w.id});
@@ -855,9 +935,9 @@ function finishWorkout() {
 function fillFromPlaceholder(e, s, si, prevMap) {
   const t = exType(e.exId); const p = (prevMap[e.exId] || [])[si];
   const b = si > 0 ? e.sets[si - 1] : null;
-  if (t === 'wr') { if (s.kg == null) s.kg = s.tkg ?? (p ? p.kg : null) ?? (b ? b.kg : null) ?? 0; if (s.reps == null) s.reps = s.treps ?? (p ? p.reps : null) ?? (b ? b.reps : null); return s.reps > 0; }
-  if (t === 'r') { if (s.reps == null) s.reps = s.treps ?? (p ? p.reps : null) ?? (b ? b.reps : null); return s.reps > 0; }
-  if (s.sec == null) s.sec = s.tsec ?? (p ? p.sec : null) ?? (b ? b.sec : null); return s.sec > 0;
+  if (t === 'wr') { if (s.kg == null) s.kg = s.tkg ?? (p ? p.kg : null) ?? (b ? b.kg : null); if (s.reps == null) s.reps = s.treps ?? (p ? p.reps : null) ?? (b ? b.reps : null); return s.kg == null ? 'kg' : s.reps > 0 ? true : 'reps'; }
+  if (t === 'r') { if (s.reps == null) s.reps = s.treps ?? (p ? p.reps : null) ?? (b ? b.reps : null); return s.reps > 0 ? true : 'reps'; }
+  if (s.sec == null) s.sec = s.tsec ?? (p ? p.sec : null) ?? (b ? b.sec : null); return s.sec > 0 ? true : 'sec';
 }
 function isLastInSS(w, ei) { const g = w.exercises[ei].superset; if (!g) return true; for (let i = ei + 1; i < w.exercises.length; i++) if (w.exercises[i].superset === g) return false; return true; }
 function nextSSLetter(w) { const used = new Set(w.exercises.map(e => e.superset).filter(Boolean)); for (const c of 'ABCDEFGHIJ') if (!used.has(c)) return c; return 'Z'; }
@@ -893,7 +973,16 @@ const A = {
     startWorkout(routineToWorkout(r));
   },
   routineMenu(el) { openSheet({type: 'routineMenu', id: el.dataset.id}); },
-  newRoutine() { ui.ed = {mode: 'routine', id: null, w: {name: '', note: '', exercises: []}}; renderEditor(); },
+  newRoutine() { openSheet({type: 'newRoutine'}); },
+  newRoutineEmpty() { closeAllSheets(); ui.ed = {mode: 'routine', id: null, w: {name: '', note: '', exercises: []}}; renderEditor(); },
+  schemaList() { replaceSheet({type: 'schemaList'}); },
+  schemaOpen(el) { openSheet({type: 'schema', id: el.dataset.id}); },
+  schemaAdd(el) {
+    const sc = SCHEMAS.find(x => x.id === el.dataset.id); let n = 0;
+    for (const r of sc.routines) { if (S.routines.some(x => x.name === r.name)) continue; const c = clone(r); c.id = uid(); S.routines.push(c); n++; }
+    saveMeta(); closeAllSheets(); ui.tab = 'home'; ui.page = null; renderAll(); window.scrollTo(0, 0);
+    toast(n ? n + ' routines toegevoegd' : 'Deze routines staan al bij je routines');
+  },
   editRoutine(el) { const r = S.routines.find(x => x.id === el.dataset.id); closeAllSheets(); ui.ed = {mode: 'routine', id: r.id, w: clone(r)}; renderEditor(); },
   dupRoutine(el) { const r = S.routines.find(x => x.id === el.dataset.id); const c = clone(r); c.id = uid(); c.name = r.name + ' (kopie)'; S.routines.push(c); saveMeta(); closeAllSheets(); renderMain(); toast('Routine gedupliceerd'); },
   deleteRoutine(el) { const id = el.dataset.id; const r = S.routines.find(x => x.id === id); confirmSheet('Routine verwijderen?', `"${r.name}" wordt verwijderd. Je trainingen blijven bewaard.`, 'Verwijderen', () => { S.routines = S.routines.filter(x => x.id !== id); saveMeta(); ui.sheets = []; if (ui.ed && ui.ed.mode === 'routine') ui.ed = null; renderAll(); toast('Routine verwijderd'); }); },
@@ -904,7 +993,7 @@ const A = {
     const {mode, w, id} = ui.ed;
     if (mode === 'routine') {
       if (!w.exercises.length) return toast('Voeg minstens één oefening toe');
-      const r = {id: id || uid(), name: (w.name || '').trim() || 'Nieuwe routine', note: w.note || '', exercises: w.exercises.map(e => ({exId: e.exId, rest: e.rest, superset: e.superset, sets: e.sets.map(s => ({type: s.type, tkg: s.tkg ?? null, treps: s.treps ?? null, tsec: s.tsec ?? null}))}))};
+      const r = {id: id || uid(), name: (w.name || '').trim() || 'Nieuwe routine', note: w.note || '', exercises: w.exercises.map(e => ({exId: e.exId, rest: e.rest, superset: e.superset, tip: e.tip || '', sets: e.sets.map(s => ({type: s.type, tkg: s.tkg ?? null, treps: s.treps ?? null, tsec: s.tsec ?? null}))}))};
       cleanSS(r); const i = S.routines.findIndex(x => x.id === r.id); if (i >= 0) S.routines[i] = r; else S.routines.push(r);
       saveMeta(); ui.ed = null; renderEditor(); renderMain(); toast('Routine opgeslagen'); return;
     }
@@ -980,7 +1069,7 @@ const A = {
     unlockAudio();
     const ei = +el.dataset.ei, si = +el.dataset.si; const w = S.active; const e = w.exercises[ei]; const s = e.sets[si];
     if (s.done) { s.done = false; s.pr = false; saveActive(); renderEditor(true); edStats(); return; }
-    if (!fillFromPlaceholder(e, s, si, lastSets(null))) { const row = document.getElementById(`sr-${ei}-${si}`); if (row) { row.classList.remove('shake'); void row.offsetWidth; row.classList.add('shake'); } toast(exType(e.exId) === 't' ? 'Vul eerst een tijd in' : 'Vul eerst het aantal reps in'); return; }
+    const ok = fillFromPlaceholder(e, s, si, lastSets(null)); if (ok !== true) { const row = document.getElementById(`sr-${ei}-${si}`); if (row) { row.classList.remove('shake'); void row.offsetWidth; row.classList.add('shake'); } toast({kg: 'Vul eerst het gewicht in (0 mag ook)', reps: 'Vul eerst het aantal reps in', sec: 'Vul eerst een tijd in'}[ok]); return; }
     s.done = true;
     // live PR check against history
     const t = exType(e.exId); const b = bestsBefore(e.exId, null);
